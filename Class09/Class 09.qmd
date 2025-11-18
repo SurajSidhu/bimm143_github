@@ -1,0 +1,156 @@
+---
+title: "Class 09: Structural Bioinformatics"
+author: "Suraj Sidhu (A18512793)"
+format: html
+toc: true
+---
+## The PDB Database
+
+The main database for structural biology is called the PDB. Let's have a look at what it contains:
+
+Download a CSV file from the PDB site (accessible from “Analyze” > “PDB Statistics” > “by Experimental Method and Molecular Type”. Move this CSV file into your RStudio project and use it to answer the following questions:
+
+##PDB objects in R
+
+```{r pdbstats, message=FALSE}
+library(readr)
+stats <- read_csv("Data Export Summary.csv")
+stats
+```
+
+```{r}
+n.total <- sum(stats$Total)
+n.total
+```
+
+
+> Q1: What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy. Give answer 
+
+```{r}
+n.xray <- sum(stats$`X-ray`)
+percent.xray <- n.xray / n.total * 100
+percent.xray
+```
+There are `r round(percent.xray,2)` percent xray structures in the PDB
+
+```{r}
+n.em <- sum(stats$EM)
+percent.em <- n.em / n.total * 100
+percent.em
+```
+There are `r round(percent.em,2)` percent xray structures in the PDB
+
+> Q2: What proportion of structures in the PDB are protein?
+
+```{r}
+round(stats$Total[1]/n.total *100,2)
+
+```
+
+## Exploring PDB Structures
+
+Package for Structural Bioinformatics
+```{r}
+library(bio3d)
+hiv <- read.pdb("1hsg")
+hiv
+```
+
+Let's first use the Mol* viewer to explore this structure.
+
+![My first view of HIV-Pr](1HSG.png)
+
+> Q3: Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+As of October 2025, there are approximately 400 HIV-1 protease structures.
+
+> Q4: Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
+
+Water molecules appear as single atoms in PDB structures because only the oxygen atom is visible in electron density maps; hydrogens are too small to detect at typical resolution and are not modeled explicitly.
+
+> Q5: There is a critical “conserved” water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have
+
+The conserved water molecule is residue HOH 50, which bridges the two catalytic Asp25 residues in the HIV-1 protease active site.
+
+>Q6: Generate and save a figure clearly showing the two distinct chains of HIV-protease along with the ligand. You might also consider showing the catalytic residues ASP 25 in each chain and the critical water (we recommend “Ball & Stick” for these side-chains). Add this figure to your Quarto document.
+
+> Q7: How many amino acid residues are there in this pdb object? 
+
+There are 198 amino acid residues in total (99 residues per chain A and B).
+
+> Q8: Name one of the two non-protein residues? 
+
+One of the non-protein residues is the ligand XK2 (an inhibitor molecule). Another is HOH (water).
+
+> Q9: How many protein chains are in this structure?
+
+The structure contains two protein chains (A and B).
+
+```{r}
+head(hiv$atom)
+```
+
+Extract the sequence
+```{r}
+pdbseq(hiv)
+```
+
+```{r}
+chainA_seq <- pdbseq(trim.pdb(hiv, chain="A"))
+```
+
+```{r}
+library(bio3dview)
+library(NGLVieweR)
+
+view.pdb(hiv) |>
+  setSpin()
+```
+
+```{r}
+sel <- atom.select(hiv, resno=25)
+
+view.pdb(hiv, highlight = sel,
+         highlight.style = "spacefill",
+         colorScheme = "chain",
+         col= c("blue", "orange"),
+         backgroundColor = "hotpink")
+```
+
+```{r}
+adk <- read.pdb("6s36")
+adk
+```
+> Q10: From which three sources can we install the bio3d package?
+
+`bio3d` can be installed from CRAN, Bioconductor, or GitHub.
+
+> Q11. Which of the above packages is not found on Bioconductor or CRAN?
+
+NGLVieweR is not found on Bioconductor or CRAN — it must be installed from GitHub.
+
+
+> Q12. True or False? Functions from the pak package can be used to install packages from GitHub and BitBucket?
+
+TRUE
+
+```{r}
+m <- nma(adk)
+```
+
+Generate a "trajectory" of predicted motion
+```{r}
+mktrj(m, file="ADK_nma.pdb")
+```
+
+```{r}
+view.nma(m)
+```
+
+> Q13. How many amino acid residues are there in Adenylate Kinase (6s36)?
+
+Adenylate Kinase (PDB: 6S36) has 214 amino acid residues.
+
+> Q14. Briefly describe what you observe in the normal mode visualization.
+
+The normal mode trajectory shows a large-scale opening and closing motion of the LID and NMP-binding domains relative to the CORE domain. 

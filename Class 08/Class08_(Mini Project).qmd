@@ -1,0 +1,260 @@
+---
+title: "Class 08: Breast Cancer Analysis Mini Project"
+author: "Suraj Sidhu (A18512793)"
+format: pdf
+toc: true
+---
+## BACKGROUND
+
+The goal of this mini-project is for you to explore a complete analysis using the unsupervised learning techniques covered in class. You’ll extend what you’ve learned by combining PCA as a preprocessing step to clustering using data that consist of measurements of cell nuclei of human breast masses. This expands on our RNA-Seq analysis from last day.
+
+The data itself comes from the Wisconsin Breast Cancer Diagnostic Data Set first reported by K. P. Benne and O. L. Mangasarian: “Robust Linear Programming Discrimination of Two Linearly Inseparable Sets”.
+
+Values in this data set describe characteristics of the cell nuclei present in digitized images of a fine needle aspiration (FNA) of a breast mass.
+
+## Data Import
+
+```{r} 
+fna.data <- read.csv(file="WisconsinCancer (1).csv")
+```
+
+```{r}
+wisc.df <- data.frame(fna.data, row.names=1)
+head(wisc.df)
+```
+
+The first column `diagnosis` is the expert opinion on the sample(i.e patient FNA)
+
+```{r}
+wisc.df$diagnosis
+```
+
+Remove the diagnosis from data for subsequent analysis
+```{r}
+wisc.data <- wisc.df[,-1]
+dim(wisc.data)
+```
+
+Store the diagnosis as a vector for later use when we compare our results to those from experts in the field.
+```{r}
+diagnosis <- factor(wisc.df$diagnosis)
+ 
+```
+
+> Q1. How many observations are in this dataset?
+
+There are `r nrow(wisc.data)` observations in the dataset.
+
+> Q2. How many of the observations have a malignant diagnosis?
+
+```{r}
+table(diagnosis)
+```
+
+> Q3. How many variables/features in the data are suffixed with _mean?
+
+```{r}
+sum(grepl("_mean$", names(wisc.data)))
+```
+
+## Performing PCA
+
+The `prcomp()` function to do PCA has a `scale=FALSE` default. In general we nearly always want to set this to TRUE so our analysis is not dominated by columns/variables in our data set that have high standard deviation and mean when compared to others just because the units of measurement are on different units/scales
+
+```{r}
+colMeans(wisc.data)
+apply(wisc.data,2,sd)
+```
+
+## Perform PCA on wisc.data by completing the following code
+```{r}
+wisc.pr <- prcomp( wisc.data, scale=TRUE )
+summary(wisc.pr)
+```
+
+The main PC result figure is called a "score plot" or "PC Plot"
+
+```{r}
+library(ggplot2)
+
+ggplot(wisc.pr$x)+
+  aes(PC1,PC2, col=diagnosis)+
+  geom_point()
+```
+> Q4. From your results, what proportion of the original variance is captured by the first principal components (PC1)?
+
+44.2%
+
+> Q5. How many principal components (PCs) are required to describe at least 70% of the original variance in the data?
+
+3 PCs
+
+> Q6. How many principal components (PCs) are required to describe at least 90% of the original variance in the data?
+
+7 PCs
+
+
+## Interpreting PCA results
+
+Create a biplot of the `wisc.pr` using the `biplot()` function.
+
+```{r}
+biplot(wisc.pr)
+```
+
+
+> Q7. What stands out to you about this plot? Is it easy or difficult to understand? Why?
+
+The biplot is difficult to interpret because too many variables and data points overlap, making it hard to distinguish which features contribute to which principal components
+
+> Q8. Generate a similar plot for principal components 1 and 3. What do you notice about these plots?
+
+```{r}
+plot(wisc.pr$x[, 1], wisc.pr$x[, 3],
+     col = ifelse(diagnosis == "M", "red", "blue"),
+     xlab = "PC1", ylab = "PC3")
+```
+
+The clusters of malignant and benign samples are still fairly distinct, though less clearly separated than in the PC1 vs PC2 plot. This suggests that PC3 still captures some biologically meaningful variation, but not as much as PC2.
+
+> Q9. For the first principal component, what is the component of the loading vector (i.e. wisc.pr$rotation[,1]) for the feature concave.points_mean?
+
+```{r}
+wisc.pr$rotation["concave.points_mean", 1]
+```
+
+
+> Q10. What is the minimum number of principal components required to explain 80% of the variance of the data?
+
+```{r}
+pr.var <- wisc.pr$sdev^2
+pve <- pr.var / sum(pr.var)
+cumulative_pve <- cumsum(pve)
+which(cumulative_pve >= 0.80)[1]
+
+```
+
+
+## Hierarchial Clustering
+
+Just clustering the original data is not very informative or helpful.
+
+```{r}
+data.scaled <- scale(wisc.data)
+data.dist <- dist(data.scaled)
+wisc.hclust <- hclust(data.dist)
+
+```
+
+View the clustering dendogram result
+```{r}
+plot(wisc.hclust)
+```
+
+
+```{r}
+wisc.hclust.clusters <- cutree(wisc.hclust, k=4)
+table(wisc.hclust.clusters)
+```
+
+```{r}
+table(wisc.hclust.clusters, diagnosis)
+```
+
+## Combining Methods (PCA and Clustering)
+
+Clustering the original data was not very productive. The PCA results looked promising. Here we combine these methods by clustering from our PCA results. In other words "clustering in PC space"...
+
+```{r}
+##Take the first 3 PCs
+dist.pc <- dist(wisc.pr$x[,1:3])
+wisc.pr.hclust <- hclust(dist.pc, method="ward.D2" )
+```
+
+View the tree...
+```{r}
+plot(wisc.pr.hclust)
+abline(h=70, col="red")
+```
+
+> Q11. Using the plot() and abline() functions, what is the height at which the clustering model has 4 clusters?
+
+At a height of approximately 70, the dendrogram divides the samples into 4 clusters.
+
+
+## Selecting number of clusters
+
+```{r}
+wisc.hclust.clusters <- cutree(wisc.pr.hclust, h = 70)
+table(wisc.hclust.clusters, diagnosis)
+```
+
+> Q12. Can you find a better cluster vs diagnoses match by cutting into a different number of clusters between 2 and 10?
+
+The best match between clusters and diagnosis typically occurs with 2 clusters, where one corresponds mostly to malignant samples and the other to benign samples.Cutting into more than 2 clusters will split groups unnecessarily or create small mixed clusters.
+
+## Using different methods
+
+> Q13. Which method gives your favorite results for the same data.dist dataset? Explain your reasoning.
+
+The Ward.D2 method produced the clearest, most balanced clustering. It minimizes within-cluster variance, forming compact, spherical groups that aligned well with malignant vs. benign diagnoses.
+
+> Q14. How well does k-means separate the two diagnoses? How does it compare to your hclust results?
+
+```{r}
+kmeans.results <- kmeans(wisc.pr$x[,1:3], centers = 2)
+table(kmeans.results$cluster, diagnosis)
+```
+The k-means model with 2 clusters separates malignant and benign cases reasonably well — one cluster mostly corresponds to malignant samples, and the other to benign. However, hierarchical clustering in PCA space (using Ward.D2) slightly outperformed k-means, producing cleaner separation with fewer mixed samples.
+
+## Combining Methods
+
+> Q15. How well does the newly created model with four clusters separate out the two diagnoses?
+
+At four clusters, two major groups correspond closely to the malignant and benign diagnoses, while the smaller clusters represent outliers or borderline samples.
+
+To get our clustering membership vector (i.e our main clustering result) we "cut" the tree at a desired height or to yield a desired number of "k" groups.
+
+```{r}
+grps <- cutree(wisc.pr.hclust, h=70)
+table(grps)
+```
+
+How this clustering grps compares to expert diagnosis 
+
+```{r}
+table(grps, diagnosis)
+```
+
+> Q16. How well do the k-means and hierarchical clustering models you created in previous sections (i.e. before PCA) do in terms of separating the diagnoses?
+
+Before PCA, both k-means and hierarchical clustering performed poorly — the data’s high dimensionality and differing scales obscured the structure, resulting in mixed clusters with low separation accuracy. After PCA, clustering performance improved dramatically because noise and redundant dimensions were removed, revealing clearer biological groupings.
+
+## Sensitivity/Specificity
+
+> Q17. Which of your analysis procedures resulted in a clustering model with the best specificity? How about sensitivity?
+
+PCA + Ward.D2 hierarchical clustering correctly identified benign cases with minimal malignant misclassification. k-means on PCA data is slightly better at detecting malignant samples but at the cost of more benign false positives. Overall, PCA + Ward.D2 gave the best trade-off between sensitivity and specificity.
+
+Sensitivity : TP/(TP+FN)
+Specificity : TN/(TN+FN)
+
+## Prediction
+
+We can use our PCA model for prediction with new input patient samples.
+
+
+> Q18. Which of these new patients should we prioritize for follow up based on your results?
+
+2
+
+
+
+
+
+
+
+
+
+
+
