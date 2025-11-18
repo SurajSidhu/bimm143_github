@@ -1,0 +1,214 @@
+---
+title: "Class 07: Machine Learning 1"
+author: "Suraj Sidhu (A18512793)"
+format: pdf
+---
+
+Today we will explore some fundamental machine learning methods including clustering and dimensionality reduction
+
+## K-Clustering
+
+To see how this works, let's first make up some data to cluster where we know what the answer should be. We can use the `rnorm()` function to help here:
+
+```{r}
+hist(rnorm(100, mean = 5))
+```
+
+
+```{r}
+x <- c(rnorm(30, mean=-3), rnorm(30, mean=3))
+y <- rev(x)
+```
+
+*cbind binds by columns*
+```{r}
+x <- cbind(x,y) 
+plot(x)
+```
+
+The function for k-Clustering in "base" R is `kmeans()`
+
+```{r}
+k <- kmeans(x, centers = 2)
+k
+```
+
+To get at the results of the returned list object we can use the dollar `$` syntax
+
+> Q. How many points are in each cluster ?
+
+```{r}
+k$size
+```
+
+
+> Q. What `component` of your result object details
+- cluster assignment/membership ?
+- cluster center ?
+
+```{r}
+k$cluster
+```
+
+```{r}
+k$centers
+```
+
+> Q. Make a clustering results figure of the data colored by cluster membership and show cluster centers ?
+
+```{r}
+plot(x, col=c("forestgreen", "red"))
+```
+
+```{r}
+plot(x, col=k$cluster, pch=16)
+points(k$centers, col="blue", pch=15, cex=2)
+```
+
+K-means clustering is very popular as it is very fast and relatively straight forward: it takes numeric data as input and returns the cluster membership vector etc.
+
+The "issue" is we tell `kmeans ()` how many clusters we want!
+
+> Q. Run kmeans again and cluster into 4 groups/clusters and plot the results like we did above.
+
+```{r}
+k4 <- kmeans(x, centers =4)
+plot(x, col=k4$cluster)
+points(k4$centers, pch=15)
+```
+Scree plot to pick k `centers` value
+```{r}
+k1 <- kmeans(x, centers=1)
+k2 <- kmeans(x, centers=2)
+k3 <- kmeans(x, centers=3)
+k4 <- kmeans(x, centers=4)
+k5 <- kmeans(x, centers=5)
+```
+
+```{r}
+c(k2$tot.withinss,
+k3$tot.withinss,
+k4$tot.withinss,
+k5$tot.withinss)
+
+plot(x, typ="b")
+```
+
+```{r}
+n <- NULL
+for(i in 1:5) {
+ n <- c(n, kmeans(x, centers=i)$tot.withinss)
+}
+plot(n, typ="b")
+```
+## Hierarchical Clustering
+
+The main "base" R function for Hierarchical Clustering is called `hclust()`. Here we can input our data we need to first calculate a distance matrix (e.g `dist()`) for our data and use this as a input to `hclust()`
+
+```{r}
+d <- dist(x)
+hc <- hclust(d)
+hc
+```
+
+There is a plot method for hclust results lets try it.
+
+```{r}
+plot(hc)
+abline(h=8, col="red")
+cutree(hc, h=8)
+```
+
+To get our cluster "membership" vector (i.e. our main clustering result) we can "cut" the tree at a given height or at a height that yields a given "k" groups
+
+```{r}
+cutree(hc, h=8)
+```
+
+```{r}
+grps <- cutree(hc, k=2)
+```
+
+> Q. Plot the data with our hclust result coloring 
+
+```{r}
+plot(x, col=grps)
+```
+
+
+# Principle Component Analysis (PCA)
+
+## PCA of UK food data
+
+Import food data from a online CSV file:
+
+```{r}
+url <- "https://tinyurl.com/UK-foods"
+x <- read.csv(url)
+head(x)
+```
+
+```{r}
+rownames(x) <- x[,1]
+x <- x[,-1]
+x
+```
+
+```{r}
+x <- read.csv(url, row.names=1)
+x
+```
+
+Some base figures
+
+```{r}
+barplot(as.matrix(x), beside=T, col=rainbow(nrow(x)))
+
+```
+
+There is one plot that can be useful for a small dataset:
+
+```{r}
+pairs(x, col=rainbow(nrow(x)), pch=16)
+
+```
+
+> Main-Point: It can be difficult to spot major trends and patterns even in relatively small multi-variable datasets (here we only have 17 dimensions, typically we have thousands)
+
+
+## PCA TO THE RESCUE
+
+The main function in "base" R for PCA is called `prcomp()`
+I will take the transpose of our data so the "foods" are in the columns:
+
+```{r}
+PCA <- prcomp(t(x))
+summary(PCA)
+```
+
+```{r}
+PCA$x
+cols <- c("orange", "darkblue", "forestgreen", "red")
+plot(PCA$x[,1], PCA$x[,2], col=cols, pch=16)
+```
+
+```{r}
+library(ggplot2)
+
+```
+
+```{r}
+ggplot(PCA$x) +
+  aes(PC1, PC2) +
+  geom_point(col=cols)
+```
+
+```{r}
+ggplot(PCA$rotation) +
+  aes(PC1, rownames(PCA$rotation)) +
+  geom_col()
+```
+
+
+
+
