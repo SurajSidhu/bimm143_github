@@ -1,18 +1,30 @@
----
-title: "Class 06 HW"
-author: "Suraj Sidhu (A18512793)"
-format: gfm
----
+# Class 06 HW
+Suraj Sidhu (A18512793)
 
 > **Can you improve this analysis code?**
 
-```{r}
+``` r
 library(bio3d)
 
 s1 <- read.pdb("4AKE")  # kinase with drug 
-s2 <- read.pdb("1AKE")  # kinase no drug 
-s3 <- read.pdb("1E4Y")  # kinase with drug
+```
 
+      Note: Accessing on-line PDB file
+
+``` r
+s2 <- read.pdb("1AKE")  # kinase no drug 
+```
+
+      Note: Accessing on-line PDB file
+       PDB has ALT records, taking A only, rm.alt=TRUE
+
+``` r
+s3 <- read.pdb("1E4Y")  # kinase with drug
+```
+
+      Note: Accessing on-line PDB file
+
+``` r
 s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
 s2.chainA <- trim.pdb(s2, chain="A", elety="CA")
 s3.chainA <- trim.pdb(s1, chain="A", elety="CA")
@@ -22,14 +34,25 @@ s2.b <- s2.chainA$atom$b
 s3.b <- s3.chainA$atom$b
 
 plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor") 
+```
+
+![](Class_06_HW_files/figure-commonmark/unnamed-chunk-1-1.png)
+
+``` r
 plotb3(s2.b, sse=s2.chainA, typ="l", ylab="Bfactor") 
+```
+
+![](Class_06_HW_files/figure-commonmark/unnamed-chunk-1-2.png)
+
+``` r
 plotb3(s3.b, sse=s3.chainA, typ="l", ylab="Bfactor")
 ```
 
+![](Class_06_HW_files/figure-commonmark/unnamed-chunk-1-3.png)
 
 > **Improved version**
 
-```{r}
+``` r
 # ----------------------------------------------------------
 # Function: analyze_protein_bfactors()
 # ----------------------------------------------------------
@@ -113,7 +136,22 @@ analyze_protein_bfactors <- function(pdb_ids) {
 pdb_ids <- c("4AKE", "1AKE", "1E4Y")
 
 bf_results <- analyze_protein_bfactors(pdb_ids)
-
 ```
 
+      Note: Accessing on-line PDB file
 
+    Warning in get.pdb(file, path = tempdir(), verbose = FALSE):
+    C:\Users\sidhu\AppData\Local\Temp\Rtmps3ywqj/4AKE.pdb exists. Skipping download
+
+      Note: Accessing on-line PDB file
+
+    Warning in get.pdb(file, path = tempdir(), verbose = FALSE):
+    C:\Users\sidhu\AppData\Local\Temp\Rtmps3ywqj/1AKE.pdb exists. Skipping download
+
+       PDB has ALT records, taking A only, rm.alt=TRUE
+      Note: Accessing on-line PDB file
+
+    Warning in get.pdb(file, path = tempdir(), verbose = FALSE):
+    C:\Users\sidhu\AppData\Local\Temp\Rtmps3ywqj/1E4Y.pdb exists. Skipping download
+
+![](Class_06_HW_files/figure-commonmark/unnamed-chunk-2-1.png)
