@@ -1,7 +1,8 @@
 ---
 title: "Class 09: Structural Bioinformatics"
 author: "Suraj Sidhu (A18512793)"
-format: html
+format: gfm
+prefer-html: true
 toc: true
 ---
 ## The PDB Database
